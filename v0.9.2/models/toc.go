@@ -249,8 +249,16 @@ func (t *Toc) Search(q string) []*SearchResult {
 	return results
 }
 
+
+/******************************************
+	            TOC 部分
+	说明:
+	-
+
+
+*******************************************/
 var (
-	tocLocker = sync.Mutex{}
+	tocLocker = sync.Mutex{}	// 加锁
 	Tocs      map[string]*Toc
 )
 
