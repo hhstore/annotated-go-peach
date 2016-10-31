@@ -34,6 +34,10 @@ import (
 	"github.com/peachdocs/peach/modules/setting"
 )
 
+/*
+链表结构:
+
+ */
 type Node struct {
 	Name  string // Name in TOC
 	Title string // Name in given language
@@ -43,7 +47,7 @@ type Node struct {
 	Plain         bool // Root node without content
 	DocumentPath  string
 	FileName      string // Full path with .md extension
-	Nodes         []*Node
+	Nodes         []*Node	// 链表结构
 	LastBuildTime int64
 }
 
@@ -101,10 +105,10 @@ func (n *Node) ReloadContent() error {
 
 	if !n.Plain {
 		n.SetText(bytes.ToLower(blackfriday.Markdown(data, textRender, 0)))
-		data = markdown(data)
+		data = markdown(data)	// 解析并渲染 markdown 数据. [github.com/peachdocs/peach/models/markdown.go:40]
 	}
 
-	return n.GenHTML(data)
+	return n.GenHTML(data)		// 生成 HTML 页面
 }
 
 // HTML2JS converts []byte type of HTML content into JS format.
@@ -117,6 +121,7 @@ func HTML2JS(data []byte) []byte {
 	return []byte(s)
 }
 
+// 生成 HTML 文件
 func (n *Node) GenHTML(data []byte) error {
 	var htmlPath string
 	if setting.Docs.Type.IsLocal() {
@@ -128,25 +133,70 @@ func (n *Node) GenHTML(data []byte) error {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("document.write(\"")
-	buf.Write(HTML2JS(data))
+	buf.Write(HTML2JS(data))	// 格式化字符串
 	buf.WriteString("\")")
 
 	n.LastBuildTime = time.Now().Unix()
+
+	// 写数据到 htmlPath.tmp 中
 	if err := com.WriteFile(htmlPath+".tmp", buf.Bytes()); err != nil {
 		return err
 	}
-	os.Remove(htmlPath)
-	return os.Rename(htmlPath+".tmp", htmlPath)
+	os.Remove(htmlPath)	// 删除旧的 htmlPath 文件
+	return os.Rename(htmlPath+".tmp", htmlPath)	// 重命名 htmlPath.tmp 为 htmlPath
 }
+
+
+
+//*********************************************************
+// 			关键模块: Toc
+//
+//
+//*********************************************************
 
 // Toc represents table of content in a specific language.
 type Toc struct {
 	RootPath string
-	Lang     string
-	Nodes    []*Node
+	Lang     string		// 语言
+	Nodes    []*Node	// 节点
 	Pages    []*Node
 }
 
+
+/*
+说明:
+	- 解析 toc 文件树.(递归实现)
+	- 本函数实现, 不好理解, 需画个目录树辅助理解.
+	- 注意: 内部有个递归处理.
+
+
+示例目录结构:
+
+-> % tree zh-CN
+zh-CN
+├── advanced
+│   ├── README.md
+│   └── config_cheat_sheet.md
+├── faqs
+│   └── README.md
+├── howto
+│   ├── README.md
+│   ├── documentation.md
+│   ├── extension.md
+│   ├── navbar.md
+│   ├── pages.md
+│   ├── protect_resources.md
+│   ├── static_resources.md
+│   ├── templates.md
+│   ├── upgrade.md
+│   └── webhook.md
+└── intro
+    ├── README.md
+    ├── getting_started.md
+    ├── installation.md
+    └── roadmap.md
+
+ */
 // GetDoc should only be called by top level toc.
 func (t *Toc) GetDoc(name string) (*Node, bool) {
 	name = strings.TrimPrefix(name, "/")
@@ -157,12 +207,12 @@ func (t *Toc) GetDoc(name string) (*Node, bool) {
 			t.Nodes[0].Plain {
 			return nil, false
 		}
-		return t.Nodes[0], false
+		return t.Nodes[0], false	// 默认返回: 首个节点
 	}
 
-	infos := strings.Split(name, "/")
+	infos := strings.Split(name, "/")        // 根据/, 切分
 
-	// Dir node.
+	// Dir node. [目录节点: 处理目录]
 	if len(infos) == 1 {
 		for i := range t.Nodes {
 			if t.Nodes[i].Name == infos[0] {
@@ -172,17 +222,19 @@ func (t *Toc) GetDoc(name string) (*Node, bool) {
 		return nil, false
 	}
 
-	// File node.
-	for i := range t.Nodes {
+	// File node. [文件节点: 处理文件]
+	for i := range t.Nodes {	// 遍历 节点集
 		if t.Nodes[i].Name == infos[0] {
-			for j := range t.Nodes[i].Nodes {
+
+			// 遍历目标节点的子节点集.
+			for j := range t.Nodes[i].Nodes {	// 子节点集
 				if t.Nodes[i].Nodes[j].Name == infos[1] {
 					if com.IsFile(t.Nodes[i].Nodes[j].FileName) {
 						return t.Nodes[i].Nodes[j], false
 					}
 
 					// If not default language, try again.
-					n, _ := Tocs[setting.Docs.Langs[0]].GetDoc(name)
+					n, _ := Tocs[setting.Docs.Langs[0]].GetDoc(name)	// todo: 递归处理
 					return n, true
 				}
 			}
@@ -192,6 +244,8 @@ func (t *Toc) GetDoc(name string) (*Node, bool) {
 	return nil, false
 }
 
+
+// 全文检索的存储结果格式
 type SearchResult struct {
 	Title string
 	Path  string
@@ -212,6 +266,14 @@ func (n *Node) adjustRange(start int) (int, int) {
 	return start, end
 }
 
+
+/*
+功能:
+	- 全文搜索(自己实现)
+说明:
+	- 学习该实现方法, 很简单. 关键词匹配+计数.
+
+ */
 func (t *Toc) Search(q string) []*SearchResult {
 	if len(q) == 0 {
 		return nil
@@ -223,6 +285,7 @@ func (t *Toc) Search(q string) []*SearchResult {
 	// Dir node.
 	for i := range t.Nodes {
 		if idx := bytes.Index(t.Nodes[i].Text(), []byte(q)); idx > -1 {
+			// 关键词匹配+计数
 			start, end := t.Nodes[i].adjustRange(utf8.RuneCount(t.Nodes[i].Text()[:idx]))
 			results = append(results, &SearchResult{
 				Title: t.Nodes[i].Title,
@@ -236,6 +299,7 @@ func (t *Toc) Search(q string) []*SearchResult {
 	for i := range t.Nodes {
 		for j := range t.Nodes[i].Nodes {
 			if idx := bytes.Index(t.Nodes[i].Nodes[j].Text(), []byte(q)); idx > -1 {
+				// 关键词匹配+计数
 				start, end := t.Nodes[i].Nodes[j].adjustRange(utf8.RuneCount(t.Nodes[i].Nodes[j].Text()[:idx]))
 				results = append(results, &SearchResult{
 					Title: t.Nodes[i].Nodes[j].Title,
