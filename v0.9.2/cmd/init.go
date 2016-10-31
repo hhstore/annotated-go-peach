@@ -27,6 +27,12 @@ import (
 	"github.com/peachdocs/peach/modules/bindata"
 )
 
+/*
+	注册的 peach 命令:
+	- peach new
+	- 此命令用来创建一个 peach 模板项目结构
+	- 初始化的原型.
+ */
 var New = cli.Command{
 	Name:   "new",
 	Usage:  "Initialize a new Peach project",
@@ -62,7 +68,12 @@ func restoreAssets(target, dir string) {
 	}
 }
 
+/*
+	关键入口:
+	- 执行创建 peach 目录原型结构.
+ */
 func runNew(ctx *cli.Context) {
+	// 参数提取
 	target := ctx.String("target")
 	if com.IsExist(target) && !ctx.Bool("yes") {
 		fmt.Printf(toYellow("Directory '%s' already exists, do you want to overwrite?[Y/n] "), target)
@@ -72,7 +83,7 @@ func runNew(ctx *cli.Context) {
 	}
 
 	fmt.Printf("➜  Creating '%s'...\n", target)
-	os.MkdirAll(target, os.ModePerm)
+	os.MkdirAll(target, os.ModePerm)			// 目录创建
 
 	// Create default files.
 	dirs := []string{"templates", "public"}
