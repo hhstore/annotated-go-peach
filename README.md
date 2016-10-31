@@ -27,14 +27,20 @@
 v0.9.2
 ├── README.md
 ├── bindata.sh
-├── cmd
+├── cmd            # 项目次级入口
 ├── conf
 ├── models
 ├── modules
-├── peach.go       # 项目入口
+├── peach.go       # 项目全局入口: main()
 ├── public
-├── routers
-└── templates
+├── routers        # 路由部分
+└── templates      # 模板文件
 
 
 ```
+
+
+## 阅读建议:
+
+- 阅读源码之前, 参考官方文档, 在本机运行起来, 方便和源码具体细节对照.
+- 从 `peach.go` 入口文件读起. 自顶向下, 逐层阅读.
