@@ -38,6 +38,9 @@ func renderEditPage(ctx *middleware.Context, documentPath string) {
 	}
 }
 
+// 核心功能:
+// 	- 文档路由处理
+//
 func Docs(ctx *middleware.Context) {
 	toc := models.Tocs[ctx.Locale.Language()]
 	if toc == nil {
@@ -46,13 +49,14 @@ func Docs(ctx *middleware.Context) {
 	ctx.Data["Toc"] = toc
 
 	nodeName := strings.TrimPrefix(strings.ToLower(strings.TrimSuffix(ctx.Req.URL.Path, ".html")), setting.Page.DocsBaseURL)
-	node, isDefault := toc.GetDoc(nodeName)
+
+	node, isDefault := toc.GetDoc(nodeName)	// 根据节点名, 提取文档内容
 	if node == nil {
 		NotFound(ctx)
 		return
 	}
 	if !setting.ProdMode {
-		node.ReloadContent()
+		node.ReloadContent()	// 解析 markdown 文件, 并渲染 HTML 页面数据
 	}
 
 	langVer := toc.Lang
@@ -61,9 +65,10 @@ func Docs(ctx *middleware.Context) {
 		langVer = setting.Docs.Langs[0]
 	}
 	ctx.Data["Title"] = node.Title
-	ctx.Data["Content"] = fmt.Sprintf(`<script type="text/javascript" src="/%s/%s?=%d"></script>`, langVer, node.DocumentPath+".js", node.LastBuildTime)
+	ctx.Data["Content"] = fmt.Sprintf(`<script type="text/javascript" src="/%s/%s?=%d"></script>`,
+		langVer, node.DocumentPath+".js", node.LastBuildTime)
 
-	renderEditPage(ctx, node.DocumentPath)
+	renderEditPage(ctx, node.DocumentPath)		// todo: ?? 实现暂时没细看
 	ctx.HTML(200, "docs")
 }
 
