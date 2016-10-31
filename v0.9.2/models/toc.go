@@ -66,41 +66,77 @@ var (
 	HTMLRoot = "data/html"
 )
 
+
+/*
+	关键方法:
+	- 解析 md 文件, 提取文件头部的信息
+
+
+	md 文件示例格式:
+	==================================
+
+	---
+	name: 创建文档仓库
+	---
+
+	# 创建文档仓库
+
+	每一个 Peach 文档仓库都包含两部分内容：
+
+	==================================
+
+
+ */
 func parseNodeName(name string, data []byte) (string, []byte) {
 	data = bytes.TrimSpace(data)
+
+	// 出错处理:
+	// - md 文件内容长度<3, 且头部无 ---, 直接返回空
 	if len(data) < 3 || string(data[:3]) != "---" {
 		return name, []byte("")
 	}
+
+	// 匹配 --- 尾, 匹配不到, 返回空
 	endIdx := bytes.Index(data[3:], []byte("---")) + 3
 	if endIdx == -1 {
 		return name, []byte("")
 	}
 
+	// 切分标题部分:
+	// - 标题部分(--- 字符对, 中间的部分),
+	// - 根据 换行符 作切分
 	opts := strings.Split(strings.TrimSpace(string(string(data[3:endIdx]))), "\n")
 
 	title := name
+
+	// 遍历标题块
 	for _, opt := range opts {
-		infos := strings.SplitN(opt, ":", 2)
+		infos := strings.SplitN(opt, ":", 2)	// 根据冒号作切分
 		if len(infos) != 2 {
 			continue
 		}
 
 		switch strings.TrimSpace(infos[0]) {
 		case "name":
-			title = strings.TrimSpace(infos[1])
+			title = strings.TrimSpace(infos[1])		// 提取文档标题
 		}
 	}
 
-	return title, data[endIdx+3:]
+	return title, data[endIdx+3:]	// 返回: 文档标题 + 文档内容
 }
 
+/*
+	关键方法:
+		- 解析 markdown 文件, 并渲染成 HTML 页面.
+ */
 func (n *Node) ReloadContent() error {
 	data, err := ioutil.ReadFile(n.FileName)
 	if err != nil {
 		return err
 	}
 
-	n.Title, data = parseNodeName(n.Name, data)
+	// [解析 md 文件, 提取 文档标题+文档内容]
+	n.Title, data = parseNodeName(n.Name, data)		// 关键方法 [本模块内实现]
 	n.Plain = len(bytes.TrimSpace(data)) == 0
 
 	if !n.Plain {
