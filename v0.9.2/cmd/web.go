@@ -89,12 +89,12 @@ func runWeb(ctx *cli.Context) {
 	}))
 
 	// 服务中间件:
-	m.Use(middleware.Contexter())
+	m.Use(middleware.Contexter())  // todo: 留意该自定义组件.
 
 	//---------------------------------------
 	//          路由配置:
 	//---------------------------------------
-	m.Get("/", routers.Home)
+	m.Get("/", routers.Home)		// 首页部分
 	m.Get("/docs", routers.Docs)
 	m.Get("/docs/images/*", routers.DocsStatic)
 	m.Get("/docs/*", routers.Protect, routers.Docs)

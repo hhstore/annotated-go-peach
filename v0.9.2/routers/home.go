@@ -25,6 +25,8 @@ import (
 	"github.com/peachdocs/peach/modules/setting"
 )
 
+// 首页路由
+//	- 注意 ctx 类型
 func Home(ctx *middleware.Context) {
 	if !setting.Page.HasLandingPage {
 		ctx.Redirect(setting.Page.DocsBaseURL)
@@ -37,7 +39,7 @@ func Home(ctx *middleware.Context) {
 func Pages(ctx *middleware.Context) {
 	toc := models.Tocs[ctx.Locale.Language()]
 	if toc == nil {
-		toc = models.Tocs[setting.Docs.Langs[0]]
+		toc = models.Tocs[setting.Docs.Langs[0]]	// 默认文档语言类型
 	}
 
 	pageName := strings.ToLower(strings.TrimSuffix(ctx.Req.URL.Path[1:], ".html"))
@@ -58,13 +60,13 @@ func Pages(ctx *middleware.Context) {
 			ctx.Data["Content"] = fmt.Sprintf(`<script type="text/javascript" src="/%s/%s?=%d"></script>`, langVer, page.DocumentPath+".js", page.LastBuildTime)
 			ctx.Data["Pages"] = toc.Pages
 
-			renderEditPage(ctx, page.DocumentPath)
+			renderEditPage(ctx, page.DocumentPath)		// 页面渲染
 			ctx.HTML(200, "docs")
 			return
 		}
 	}
 
-	NotFound(ctx)
+	NotFound(ctx)	// 404页面
 }
 
 func NotFound(ctx *middleware.Context) {
