@@ -20,6 +20,7 @@ import (
 	"github.com/peachdocs/peach/modules/setting"
 )
 
+// 搜索功能路由实现
 func Search(ctx *middleware.Context) {
 	ctx.Data["Title"] = ctx.Tr("search")
 
@@ -28,14 +29,14 @@ func Search(ctx *middleware.Context) {
 		toc = models.Tocs[setting.Docs.Langs[0]]
 	}
 
-	q := ctx.Query("q")
+	q := ctx.Query("q")		// 提取查询关键词
 	if len(q) == 0 {
 		ctx.Redirect(setting.Page.DocsBaseURL)
 		return
 	}
 
 	ctx.Data["Keyword"] = q
-	ctx.Data["Results"] = toc.Search(q)
+	ctx.Data["Results"] = toc.Search(q)		// 调用搜索方法, 把搜索结果存入 Results 字段.
 
 	ctx.HTML(200, "search")
 }

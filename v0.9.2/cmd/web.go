@@ -99,7 +99,7 @@ func runWeb(ctx *cli.Context) {
 	m.Get("/docs/images/*", routers.DocsStatic)
 	m.Get("/docs/*", routers.Protect, routers.Docs)
 	m.Post("/hook", routers.Hook)
-	m.Get("/search", routers.Search)
+	m.Get("/search", routers.Search)	// 搜索页面路由
 	m.Get("/*", routers.Pages)		// [页面遍历搜索, 找到即渲染页面]github.com/peachdocs/peach/routers/home.go:39
 
 	m.NotFound(routers.NotFound)
