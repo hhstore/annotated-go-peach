@@ -24,21 +24,32 @@ import (
 	"github.com/go-macaron/pongo2"
 	"gopkg.in/macaron.v1"
 
-	"github.com/peachdocs/peach/models"
-	"github.com/peachdocs/peach/modules/middleware"
-	"github.com/peachdocs/peach/modules/setting"
-	"github.com/peachdocs/peach/routers"
+	// 项目模块:
+	"github.com/peachdocs/peach/models"                       // 数据库模型
+	"github.com/peachdocs/peach/modules/middleware"           // 中间件
+	"github.com/peachdocs/peach/modules/setting"              // 配置部分
+	"github.com/peachdocs/peach/routers"                      // 路由部分
 )
 
+/*
+	关键入口:
+	- 从命令行获取参数, 执行服务启动操作
+	- Action: 执行启动操作
+ */
 var Web = cli.Command{
 	Name:   "web",
 	Usage:  "Start Peach web server",
-	Action: runWeb,
+	Action: runWeb,		// todo: 关键入口
 	Flags: []cli.Flag{
 		stringFlag("config, c", "custom/app.ini", "Custom configuration file path"),
 	},
 }
 
+/*
+	关键入口:
+	- 创建项目实例, 并启动服务
+
+ */
 func runWeb(ctx *cli.Context) {
 	if ctx.IsSet("config") {
 		setting.CustomConf = ctx.String("config")
@@ -48,16 +59,27 @@ func runWeb(ctx *cli.Context) {
 
 	log.Info("Peach %s", setting.AppVer)
 
+	//---------------------------------------
+	//          关键入口:
+	//---------------------------------------
+	// 创建web 服务对象
 	m := macaron.New()
+
+	// 日志
 	m.Use(macaron.Logger())
 	m.Use(macaron.Recovery())
+
+	// 静态资源处理
 	m.Use(macaron.Statics(macaron.StaticOptions{
 		SkipLogging: setting.ProdMode,
 	}, "custom/public", "public", models.HTMLRoot))
+
 	m.Use(i18n.I18n(i18n.Options{
 		Files:       setting.Docs.Locales,
 		DefaultLang: setting.Docs.Langs[0],
 	}))
+
+	// 模板资源:
 	tplDir := "templates"
 	if setting.Page.UseCustomTpl {
 		tplDir = "custom/templates"
@@ -65,8 +87,13 @@ func runWeb(ctx *cli.Context) {
 	m.Use(pongo2.Pongoer(pongo2.Options{
 		Directory: tplDir,
 	}))
+
+	// 服务中间件:
 	m.Use(middleware.Contexter())
 
+	//---------------------------------------
+	//          路由配置:
+	//---------------------------------------
 	m.Get("/", routers.Home)
 	m.Get("/docs", routers.Docs)
 	m.Get("/docs/images/*", routers.DocsStatic)
@@ -77,7 +104,7 @@ func runWeb(ctx *cli.Context) {
 
 	m.NotFound(routers.NotFound)
 
-	listenAddr := fmt.Sprintf("0.0.0.0:%d", setting.HTTPPort)
+	listenAddr := fmt.Sprintf("0.0.0.0:%d", setting.HTTPPort)	// 设置服务 IP + 端口
 	log.Info("%s Listen on %s", setting.Site.Name, listenAddr)
-	log.Fatal("Fail to start Peach: %v", http.ListenAndServe(listenAddr, m))
+	log.Fatal("Fail to start Peach: %v", http.ListenAndServe(listenAddr, m))   // 启动服务
 }
