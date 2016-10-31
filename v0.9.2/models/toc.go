@@ -362,6 +362,7 @@ var (
 	Tocs      map[string]*Toc
 )
 
+// 初始化
 func initToc(localRoot string) (map[string]*Toc, error) {
 	tocPath := path.Join(localRoot, "TOC.ini")
 	if !com.IsFile(tocPath) {
@@ -434,8 +435,14 @@ func initToc(localRoot string) (map[string]*Toc, error) {
 	return tocs, nil
 }
 
+/*
+	关键方法:
+		- 重载 docs 文档目录.
+		- 拉取最新资源: git clone / git pull 远端最新文档资源.
+		- 有几个细节, 需要留意.
+ */
 func ReloadDocs() error {
-	tocLocker.Lock()
+	tocLocker.Lock()			// 加锁处理
 	defer tocLocker.Unlock()
 
 	localRoot := setting.Docs.Target
@@ -450,15 +457,15 @@ func ReloadDocs() error {
 		}
 
 		// Clone new or pull to update.
-		if com.IsDir(absRoot) {
-			stdout, stderr, err := com.ExecCmdDir(absRoot, "git", "pull")
+		if com.IsDir(absRoot) {		// 目录已存在, 只需更新
+			stdout, stderr, err := com.ExecCmdDir(absRoot, "git", "pull")	// git pull absRoot , 拉取最新代码
 			if err != nil {
 				return fmt.Errorf("Fail to update docs from remote source(%s): %v - %s", setting.Docs.Target, err, stderr)
 			}
 			fmt.Println(stdout)
-		} else {
+		} else {		// 目录不存在, 创建目录, 并 git clone 下来.
 			os.MkdirAll(filepath.Dir(absRoot), os.ModePerm)
-			stdout, stderr, err := com.ExecCmd("git", "clone", setting.Docs.Target, absRoot)
+			stdout, stderr, err := com.ExecCmd("git", "clone", setting.Docs.Target, absRoot)	// git clone 操作
 			if err != nil {
 				return fmt.Errorf("Fail to clone docs from remote source(%s): %v - %s", setting.Docs.Target, err, stderr)
 			}
@@ -470,11 +477,11 @@ func ReloadDocs() error {
 		return fmt.Errorf("Documentation not found: %s - %s", setting.Docs.Type, localRoot)
 	}
 
-	tocs, err := initToc(localRoot)
+	tocs, err := initToc(localRoot)		// 初始化 [github.com/peachdocs/peach/models/toc.go:366]
 	if err != nil {
 		return fmt.Errorf("initToc: %v", err)
 	}
-	initDocs(tocs, localRoot)
+	initDocs(tocs, localRoot)	// [github.com/peachdocs/peach/models/doc.go:63]
 	Tocs = tocs
-	return reloadProtects(localRoot)
+	return reloadProtects(localRoot)	// [github.com/peachdocs/peach/models/protect.go:41]
 }
