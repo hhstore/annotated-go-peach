@@ -39,10 +39,21 @@ func main() {
 	app.Version = APP_VER
 	app.Author = "Unknwon"
 	app.Email = "u@gogs.io"
+
+
+	/*
+		全局关键:
+		- 1. 注册2个命令服务. 通过命令行传参方式执行.
+		- 2. 使用方法:
+			- peach new -target=my.peach    // 在当前目录下, 创建peach工程目录.
+			- peach web                     // 启动 web 服务器.
+	 */
 	app.Commands = []cli.Command{
-		cmd.Web,
-		cmd.New,
+		cmd.Web,	// todo: 命令1: 启动 web 服务 [全局关键入口]
+		cmd.New,	// 命令2: 用来生成 peach 项目原型结构.
 	}
 	app.Flags = append(app.Flags, []cli.Flag{}...)
+
+	// 从命令行获取参数,并执行
 	app.Run(os.Args)
 }
