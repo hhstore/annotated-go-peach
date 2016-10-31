@@ -83,7 +83,7 @@ var (
 		Type   DocType
 		Target string
 		Secret string
-		Langs  []string
+		Langs  []string		// 文档语言类型, eg: 中文
 
 		// Only used for languages are not en-US or zh-CN to bypass error panic.
 		Locales map[string][]byte
