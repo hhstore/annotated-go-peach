@@ -85,7 +85,7 @@ func runWeb(ctx *cli.Context) {
 		tplDir = "custom/templates"
 	}
 	m.Use(pongo2.Pongoer(pongo2.Options{
-		Directory: tplDir,
+		Directory: tplDir,		// 注意: 模板处理部分 pongo2模块 [github.com/go-macaron/pongo2/pongo2.go:194]
 	}))
 
 	// 服务中间件:
@@ -96,9 +96,9 @@ func runWeb(ctx *cli.Context) {
 	//---------------------------------------
 	m.Get("/", routers.Home)		// 首页部分路由: [github.com/peachdocs/peach/routers/home.go:30]
 	m.Get("/docs", routers.Docs)	// 文档部分路由: [github.com/peachdocs/peach/routers/docs.go:44]
-	m.Get("/docs/images/*", routers.DocsStatic)
+	m.Get("/docs/images/*", routers.DocsStatic)			// 文档图片路由: [github.com/peachdocs/peach/routers/docs.go:80]
 	m.Get("/docs/*", routers.Protect, routers.Docs)
-	m.Post("/hook", routers.Hook)
+	m.Post("/hook", routers.Hook)		// 钩子路由: 自动拉取最新资源, 更新文档. [github.com/peachdocs/peach/routers/docs.go:105]
 	m.Get("/search", routers.Search)	// 搜索页面路由: [github.com/peachdocs/peach/routers/search.go:24]
 	m.Get("/*", routers.Pages)			// [页面遍历搜索, 找到即渲染页面]github.com/peachdocs/peach/routers/home.go:39
 
