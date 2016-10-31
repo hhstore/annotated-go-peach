@@ -71,9 +71,15 @@ func Docs(ctx *middleware.Context) {
 	renderEditPage(ctx, node.DocumentPath)		// todo: ?? 实现暂时没细看
 	ctx.HTML(200, "docs")
 }
+/*
+	功能:
+		- 文档静态资源路由处理
+		- 打开图片, 并将图片数据写入到 ctx.Resp 返回
 
+ */
 func DocsStatic(ctx *middleware.Context) {
 	if len(ctx.Params("*")) > 0 {
+		// 尝试打开图片文件
 		f, err := os.Open(path.Join(models.Tocs[setting.Docs.Langs[0]].RootPath, "images", ctx.Params("*")))
 		if err != nil {
 			ctx.JSON(500, map[string]interface{}{
@@ -83,7 +89,7 @@ func DocsStatic(ctx *middleware.Context) {
 		}
 		defer f.Close()
 
-		_, err = io.Copy(ctx.Resp, f)
+		_, err = io.Copy(ctx.Resp, f)	// 从图片文件中提取数据, 写入到 ctx.Resp (响应) 返回
 		if err != nil {
 			ctx.JSON(500, map[string]interface{}{
 				"error": err.Error(),
@@ -95,7 +101,9 @@ func DocsStatic(ctx *middleware.Context) {
 	ctx.Error(404)
 }
 
+// 钩子路由:
 func Hook(ctx *middleware.Context) {
+	// 验证密钥是否匹配
 	if ctx.Query("secret") != setting.Docs.Secret {
 		ctx.Error(403)
 		return
